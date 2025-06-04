@@ -36,3 +36,11 @@ model FishingReport {
   isPublic      Boolean  @default(true)
   createdAt     DateTime @default(now())
 }
+
+model KnowledgeBase {
+  id        Int      @id @default(autoincrement())
+  fishName  String
+  source    String?
+  data      Json     // Храним всё, что есть по рыбе (и расширяем в будущем)
+  createdAt DateTime @default(now())
+}
