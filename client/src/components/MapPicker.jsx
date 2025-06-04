@@ -8,7 +8,7 @@ export default function MapPicker({ lat, lon, onChange }) {
   };
 
   return (
-    <YMaps>
+    <YMaps query={{ apikey: "58ca7fe7-347f-45a6-83d5-cd66a68a8cf1" }}>
       <Map
         state={defaultState}
         width="100%"
