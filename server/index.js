@@ -7,7 +7,8 @@ const fishingRoutes = require("./routes/fishing");
 const forecastRoutes = require("./routes/forecast");
 const fs = require('fs');
 const path = require('path');
-const { getWeatherForecast, getLocalMoonPhase, geocodeCity } = require('./weather');
+const { getWeatherForecast, getLocalMoonPhase, geocodeCity, reverseGeocode } = require('./weather');
+const reverseGeocodeRoutes = require("./routes/reverse-geocode");
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(bodyParser.json());
 app.use("/api", authRoutes);
 app.use("/api/fishing", fishingRoutes);
 app.use("/api/forecast", forecastRoutes);
+app.use("/api/reverse-geocode", reverseGeocodeRoutes);
 
 app.get("/", (req, res) => {
   res.send("AI-Fishing API works!");
@@ -74,6 +76,18 @@ app.get('/api/species', (req, res) => {
   // Вернуть массив ключей (названия видов рыб)
   res.json(Object.keys(fishData));
 });
+
+app.get('/api/reverse-geocode', async (req, res) => {
+  const { lat, lon } = req.query;
+  if (!lat || !lon) return res.status(400).json({ error: 'lat/lon required' });
+  try {
+    const city = await reverseGeocode(lat, lon);
+    res.json({ city });
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка reverse-geocode', detail: err.message });
+  }
+});
+
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

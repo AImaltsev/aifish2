@@ -50,6 +50,36 @@ export default function Home() {
     fetchFishings();
   }, []);
 
+  // Автоматически определяем место по координатам (река, озеро, город, ...).
+  useEffect(() => {
+    async function fetchPlace() {
+      if (coords.lat && coords.lon) {
+        try {
+          const res = await axios.get(
+            `http://localhost:4000/api/reverse-geocode?lat=${coords.lat}&lon=${coords.lon}`
+          );
+          // 1. Пробуем взять название водоёма, если есть
+          const a = res.data.raw?.address || {};
+          const water =
+            a.water || a.river || a.lake || a.reservoir || a.stream;
+          if (water) {
+            // Собираем подпись: река/озеро + город/регион если есть
+            let place = water;
+            if (a.city) place += `, ${a.city}`;
+            else if (a.town) place += `, ${a.town}`;
+            else if (a.state) place += `, ${a.state}`;
+            setForm(f => ({ ...f, location: place }));
+          } else if (res.data.place) {
+            setForm(f => ({ ...f, location: res.data.place }));
+          }
+        } catch (e) {
+          // Не удалось получить место — оставляем как есть
+        }
+      }
+    }
+    fetchPlace();
+  }, [coords.lat, coords.lon]);
+
   // Обработка формы прогноза клёва
   const handleChange = e => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -65,7 +95,7 @@ export default function Home() {
         lat = coords.lat;
         lon = coords.lon;
       } else if (form.location) {
-        // Получаем координаты по городу/локации
+        // Получаем координаты по названию места
         const geo = await axios.get("http://localhost:4000/api/geocode?city=" + encodeURIComponent(form.location));
         lat = geo.data.lat;
         lon = geo.data.lon;
@@ -112,6 +142,35 @@ export default function Home() {
             lon={coords.lon || 48.47412}
             onChange={setCoords}
           />
+          <button
+            type="button"
+            onClick={async () => {
+              if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                  pos => {
+                    setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+                  },
+                  err => {
+                    alert("Не удалось получить геолокацию");
+                  }
+                );
+              } else {
+                alert("Геолокация не поддерживается вашим браузером");
+              }
+            }}
+            style={{
+              margin: "8px 0",
+              padding: "4px 10px",
+              borderRadius: 6,
+              border: "1px solid #bbb",
+              background: "#f2f8ff",
+              color: "#2563eb",
+              cursor: "pointer"
+            }}
+          >
+            📍 Моё местоположение
+          </button>
+
           {coords.lat && coords.lon && (
             <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
               Координаты: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}

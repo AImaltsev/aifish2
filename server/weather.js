@@ -35,4 +35,24 @@ async function geocodeCity(city) {
   return { lat: response.data[0].lat, lon: response.data[0].lon };
 }
 
-module.exports = { getWeatherForecast, getLocalMoonPhase, geocodeCity };
+// Получить город по координатам (reverse geocoding)
+async function reverseGeocode(lat, lon) {
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+  const response = await axios.get(url, { headers: { 'User-Agent': 'AI-Fishing/1.0' } });
+  // Возвращаем city, town, village или display_name
+  return (
+    response.data.address.city ||
+    response.data.address.town ||
+    response.data.address.village ||
+    response.data.address.settlement ||
+    response.data.display_name ||
+    ""
+  );
+}
+
+module.exports = {
+  getWeatherForecast,
+  getLocalMoonPhase,
+  geocodeCity,
+  reverseGeocode
+};
