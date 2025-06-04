@@ -1,32 +1,19 @@
-// Простейшая заглушка — прогноз по дню недели, для примера
-const getForecast = (req, res) => {
-  const { location, date, fishSpecies } = req.body;
+// controllers/forecastController.js
 
-  const dateObj = new Date(date);
-  const weekday = dateObj.getDay();
+const { getBiteForecast } = require("../forecastEngine");
 
-  // Примитивная логика "заглушка"
-  let score = "normal";
-  let reason = "Средние условия";
-  let advice = "Используйте универсальные снасти";
-
-  if ([0, 6].includes(weekday)) {
-    score = "good";
-    reason = "Выходные дни, клёв традиционно лучше!";
-    advice = "Рекомендуем фидер или спиннинг";
+// Принимает запрос, вызывает анализатор и возвращает прогноз
+const getForecast = async (req, res) => {
+  try {
+    const { species, lat, lon, date } = req.body;
+    if (!species || !lat || !lon) {
+      return res.status(400).json({ error: "Не хватает данных (species, lat, lon)" });
+    }
+    const forecast = await getBiteForecast({ species, lat, lon, date });
+    res.json(forecast);
+  } catch (e) {
+    res.status(500).json({ error: "Ошибка анализа прогноза", detail: e.message });
   }
-  if (fishSpecies && fishSpecies.includes("щука")) {
-    advice += ". Для щуки попробуйте крупные блёсны";
-  }
-
-  res.json({
-    score,
-    reason,
-    advice,
-    location,
-    date,
-    fishSpecies
-  });
 };
 
 module.exports = { getForecast };

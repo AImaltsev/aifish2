@@ -68,6 +68,13 @@ app.get('/api/geocode', async (req, res) => {
   }
 });
 
+// Получить список всех видов рыб из базы знаний
+app.get('/api/species', (req, res) => {
+  const fishData = getFishKnowledge();
+  // Вернуть массив ключей (названия видов рыб)
+  res.json(Object.keys(fishData));
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

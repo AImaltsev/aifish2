@@ -17,12 +17,34 @@ function getSeasonByMonth(month) {
   return "осень";
 }
 
+// Генерация красивого, "человеческого" объяснения
+function makeExplanation({ level, reasons, species, city, t, nowSeason, moonPhase, date, advice }) {
+  let title = "";
+  if (level === "отличный") title = `Сегодня отличный клёв для ${species}${city ? ' в ' + city : ''}!`;
+  else if (level === "средний") title = `Клёв для ${species}${city ? ' в ' + city : ''} возможен, но есть нюансы.`;
+  else if (level === "нет данных") title = `Нет данных по виду "${species}".`;
+  else title = `Клёв для ${species}${city ? ' в ' + city : ''} скорее всего слабый.`;
+
+  let tips = "";
+  if (advice) {
+    tips = "Совет: " + advice;
+  } else if (level === "отличный") {
+    tips = "Советуем отправляться на водоём — все условия в вашу пользу!";
+  } else if (level === "средний") {
+    tips = "Лучше выбрать проверенные снасти и подходящее время суток.";
+  } else {
+    tips = "Лучше дождаться лучших условий.";
+  }
+
+  return `${title}\n${reasons.join(", ")}.\n${tips}\nФаза луны: ${moonPhase}.\nДата: ${date}.`;
+}
+
 // Анализ прогноза по правилам из fish_knowledge
-function analyzeMatch({ fish, weather, moonPhase, date }) {
+function analyzeMatch({ fish, weather, moonPhase, date, city }) {
   const fishKnowledge = getFishKnowledge();
   const knowledgeArr = fishKnowledge[fish.toLowerCase()];
   if (!knowledgeArr || knowledgeArr.length === 0) {
-    return { score: 0, level: "нет данных", reason: "Нет данных по этой рыбе." };
+    return { score: 0, level: "нет данных", explanation: `Нет данных по виду "${fish}".` };
   }
   const rules = knowledgeArr[0]; // используем первую карточку (от Сабанеева)
 
@@ -50,14 +72,13 @@ function analyzeMatch({ fish, weather, moonPhase, date }) {
 
   // 3. Ветер (берём доминантное направление)
   const windDir = weather.daily?.winddirection_10m_dominant?.[0];
-  let windOk = false;
   if (windDir) {
     // Юг ~180, запад ~270
     if (
       (windDir >= 157 && windDir <= 202 && rules.weatherGood.join(" ").includes("южн")) ||
       (windDir >= 247 && windDir <= 292 && rules.weatherGood.join(" ").includes("запад"))
     ) {
-      score += 0.25; windOk = true; reasons.push("ветер хороший");
+      score += 0.25; reasons.push("ветер хороший");
     }
     if (
       (windDir >= 337 || windDir <= 22) && rules.weatherBad.join(" ").includes("север")
@@ -66,8 +87,8 @@ function analyzeMatch({ fish, weather, moonPhase, date }) {
     }
   }
 
-  // 4. Фаза луны — если есть “полнолуние”, "новолуние", "убывающая", можно доработать
-  if (rules.weatherGood.join(" ").includes(moonPhase)) {
+  // 4. Фаза луны
+  if (rules.weatherGood && rules.weatherGood.join(" ").includes(moonPhase)) {
     score += 0.15; reasons.push("удачная лунная фаза");
   } else {
     reasons.push("средняя лунная фаза");
@@ -78,27 +99,45 @@ function analyzeMatch({ fish, weather, moonPhase, date }) {
   if (score >= 0.7) level = "отличный";
   else if (score >= 0.4) level = "средний";
 
+  // Совет — берем первую подсказку из tackleAdvice или делаем свой текст
+  let advice = "";
+  if (rules.tackleAdvice && rules.tackleAdvice.length) {
+    advice = rules.tackleAdvice[0];
+  }
+
   return {
     score: Math.round(score * 100) / 100,
     level,
-    reason: reasons.join(", ")
+    explanation: makeExplanation({
+      level,
+      reasons,
+      species: fish,
+      city,
+      t,
+      nowSeason,
+      moonPhase,
+      date,
+      advice,
+    }),
   };
 }
 
 // Главная функция: прогноз клёва
-async function getBiteForecast({ species, lat, lon, date }) {
+async function getBiteForecast({ species, lat, lon, date, city }) {
   const weather = await getWeatherForecast(lat, lon);
   const moonPhase = getLocalMoonPhase(date ? new Date(date) : new Date());
   const result = analyzeMatch({
     fish: species,
     weather,
     moonPhase,
-    date
+    date,
+    city,
   });
   return {
     ...result,
     moonPhase,
-    weather: weather.daily,
+    // weather: weather.daily, // Можно скрыть для компактности ответа
+    date,
   };
 }
 
