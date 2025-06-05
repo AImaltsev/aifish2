@@ -210,6 +210,11 @@ export default function Encyclopedia() {
     try {
       const text = await file.text();
       const json = JSON.parse(text);
+      if (typeof json !== "object" || Array.isArray(json) || !json) {
+        setError("Импортируемый файл должен быть JSON-объектом!");
+        setLoading(false);
+        return;
+      }
       const res = await fetch("/api/fish-admin/import", {
         method: "POST",
         headers: {
@@ -218,7 +223,10 @@ export default function Encyclopedia() {
         },
         body: JSON.stringify(json)
       });
-      if (!res.ok) throw new Error("Ошибка импорта");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Ошибка импорта");
+      }
       await loadFish();
       setError("");
     } catch (err) {
