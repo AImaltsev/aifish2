@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const { getWeatherForecast, getLocalMoonPhase, geocodeCity, reverseGeocode } = require('./weather');
 const reverseGeocodeRoutes = require("./routes/reverse-geocode");
+const fishAdminRouter = require('./routes/fishAdmin');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use("/api", authRoutes);
 app.use("/api/fishing", fishingRoutes);
 app.use("/api/forecast", forecastRoutes);
 app.use("/api/reverse-geocode", reverseGeocodeRoutes);
+app.use('/api/fish-admin', fishAdminRouter);
 
 app.get("/", (req, res) => {
   res.send("AI-Fishing API works!");

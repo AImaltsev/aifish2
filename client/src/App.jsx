@@ -4,6 +4,7 @@ import AddFishing from "./pages/AddFishing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Header from "./components/Header";
+import AdminPanel from "./components/AdminPanel";
 
 function App() {
   const isAuth = !!localStorage.getItem("token"); // простая проверка входа
@@ -16,6 +17,7 @@ function App() {
         <Route path="/add" element={isAuth ? <AddFishing /> : <Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/adminka/*" element={<AdminPanel />} />
         {/* ...другие страницы */}
       </Routes>
     </BrowserRouter>
