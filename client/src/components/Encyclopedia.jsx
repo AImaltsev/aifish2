@@ -74,52 +74,6 @@ function DynamicField({ k, value, onChange, onDelete }) {
   );
 }
 
-
-const handleExportJson = async () => {
-  setLoading(true);
-  try {
-    const res = await fetch("/api/fish-admin", {
-      headers: { "x-admin-password": getAdminPassword() }
-    });
-    const data = await res.json();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "fish_knowledge.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch (e) {
-    setError("Ошибка экспорта: " + e.message);
-  }
-  setLoading(false);
-};
-
-// Импорт
-const handleImportJson = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  setLoading(true);
-  try {
-    const text = await file.text();
-    const json = JSON.parse(text);
-    const res = await fetch("/api/fish-admin/import", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-password": getAdminPassword()
-      },
-      body: JSON.stringify(json)
-    });
-    if (!res.ok) throw new Error("Ошибка импорта");
-    await loadFish();
-    setError("");
-  } catch (err) {
-    setError("Ошибка импорта: " + err.message);
-  }
-  setLoading(false);
-};
-
 export default function Encyclopedia() {
   const [fishList, setFishList] = useState([]);
   const [selectedFish, setSelectedFish] = useState(null);
@@ -226,6 +180,51 @@ export default function Encyclopedia() {
     if (!newFieldName.trim()) return;
     setEditData(data => ({ ...data, [newFieldName.trim()]: "" }));
     setNewFieldName("");
+  };
+
+  const handleExportJson = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/fish-admin", {
+        headers: { "x-admin-password": getAdminPassword() }
+      });
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fish_knowledge.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError("Ошибка экспорта: " + e.message);
+    }
+    setLoading(false);
+  };
+
+  // Импорт
+  const handleImportJson = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setLoading(true);
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const res = await fetch("/api/fish-admin/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": getAdminPassword()
+        },
+        body: JSON.stringify(json)
+      });
+      if (!res.ok) throw new Error("Ошибка импорта");
+      await loadFish();
+      setError("");
+    } catch (err) {
+      setError("Ошибка импорта: " + err.message);
+    }
+    setLoading(false);
   };
 
   return (
