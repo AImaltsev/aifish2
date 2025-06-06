@@ -1,5 +1,3 @@
-// controllers/forecastController.js
-
 const { getBiteForecast } = require("../forecastEngine");
 
 // Принимает запрос, вызывает анализатор и возвращает прогноз

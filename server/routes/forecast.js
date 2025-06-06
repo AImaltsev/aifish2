@@ -1,13 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const forecastController = require("../controllers/forecastController");
 const authMiddleware = require("../middleware/authMiddleware");
 const { getBiteForecast } = require('../forecastEngine');
 
-router.post("/", authMiddleware, forecastController.getForecast);
-
-router.post("/", async (req, res) => {
-  // На фронте ты отправляешь { species, lat, lon, date }
+// Единый POST эндпоинт
+router.post("/", authMiddleware, async (req, res) => {
   const { species, lat, lon, date } = req.body;
   if (!species || !lat || !lon) {
     return res.status(400).json({ error: "species, lat, lon required" });
