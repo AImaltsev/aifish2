@@ -83,6 +83,8 @@ export default function Encyclopedia() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [newFieldName, setNewFieldName] = useState("");
+  const [showPasteJson, setShowPasteJson] = useState(false);
+  const [pastedJson, setPastedJson] = useState("");
 
   // Загрузка всех рыб
   const loadFish = async () => {
@@ -248,6 +250,9 @@ export default function Encyclopedia() {
       <button onClick={() => startEdit("", { name: "", source: "" }, true)} style={{ marginLeft: 10 }}>
         + Добавить рыбу
       </button>
+      <button onClick={() => setShowPasteJson(true)} style={{ marginLeft: 12 }}>
+        Вставить JSON
+      </button>
       <div style={{ marginBottom: 16 }}>
         <button onClick={handleExportJson}>Скачать JSON</button>
         <input
@@ -353,6 +358,50 @@ export default function Encyclopedia() {
               </button>
             </>
           )}
+        </div>
+      )}
+
+      {showPasteJson && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10
+        }}>
+          <div style={{ background: "#fff", padding: 28, borderRadius: 8, width: 500 }}>
+            <h3>Вставьте JSON-код</h3>
+            <textarea
+              value={pastedJson}
+              onChange={e => setPastedJson(e.target.value)}
+              rows={14}
+              style={{ width: "100%", fontFamily: "monospace" }}
+            />
+            <div style={{ marginTop: 18 }}>
+              <button
+                onClick={async () => {
+                  try {
+                    const json = JSON.parse(pastedJson);
+                    // Отправка на сервер
+                    const res = await fetch("/api/fish-admin/import", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "x-admin-password": getAdminPassword(),
+                      },
+                      body: JSON.stringify(json),
+                    });
+                    if (!res.ok) throw new Error("Ошибка импорта");
+                    setShowPasteJson(false);
+                    setPastedJson("");
+                    await loadFish();
+                    setError("");
+                  } catch (err) {
+                    setError("Ошибка импорта: " + err.message);
+                  }
+                }}
+                style={{ marginRight: 10 }}
+              >Импортировать</button>
+              <button onClick={() => setShowPasteJson(false)}>Отмена</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

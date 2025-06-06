@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const router = express.Router();
 
-const FILE_PATH = path.join(__dirname, '../data/fish_knowledge.json');
+const FISH_KNOWLEDGE_PATH = path.join(__dirname, '../data/fish_knowledge.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "supersecret";
 
 
@@ -17,11 +17,11 @@ function isAdmin(req, res, next) {
 
 // --- Вспомогательные функции --- //
 function readData() {
-  if (!fs.existsSync(FILE_PATH)) return {};
-  return JSON.parse(fs.readFileSync(FILE_PATH, 'utf-8'));
+  if (!fs.existsSync(FISH_KNOWLEDGE_PATH)) return {};
+  return JSON.parse(fs.readFileSync(FISH_KNOWLEDGE_PATH, 'utf-8'));
 }
 function writeData(data) {
-  fs.writeFileSync(FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  fs.writeFileSync(FISH_KNOWLEDGE_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 // --- Авторизация --- //
@@ -52,14 +52,17 @@ router.post('/', (req, res) => {
 //JSON import/export
 
 router.post('/import', isAdmin, (req, res) => {
-  const data = req.body;
-  if (!data || typeof data !== "object") {
-    return res.status(400).json({ error: "Некорректный JSON" });
-  }
   try {
-    fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2), "utf-8");
+    const imported = req.body;
+    if (!imported || typeof imported !== "object") {
+      return res.status(400).json({ error: "Нет или некорректный JSON" });
+    }
+    // Логируем путь!
+    console.log("FISH_KNOWLEDGE_PATH:", FISH_KNOWLEDGE_PATH);
+    fs.writeFileSync(FISH_KNOWLEDGE_PATH, JSON.stringify(imported, null, 2));
     res.json({ ok: true });
   } catch (e) {
+    console.error("Ошибка записи файла:", e);
     res.status(500).json({ error: "Ошибка сохранения файла", detail: e.message });
   }
 });

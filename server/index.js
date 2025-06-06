@@ -14,7 +14,7 @@ const fishAdminRouter = require('./routes/fishAdmin');
 const app = express();
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: "10mb" }));
 
 app.use("/api", authRoutes);
 app.use("/api/fishing", fishingRoutes);
