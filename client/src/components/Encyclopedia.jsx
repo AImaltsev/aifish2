@@ -281,14 +281,29 @@ export default function Encyclopedia() {
             .map(([name, arr]) => (
               <tr key={name}>
                 <td>{name}</td>
-                <td>{arr[0]?.source || ""}</td>
                 <td>
-                  <button onClick={() => startEdit(name, arr[0], false)}>Подробнее</button>
-                  <button onClick={() => startEdit(name, arr[0], true)} style={{ marginLeft: 8 }}>
-                    Редактировать
-                  </button>
+                  {/* Если несколько источников — показать все */}
+                  {arr.map((entry, idx) => (
+                    <div key={idx} style={{ marginBottom: 3 }}>
+                      <span style={{ fontWeight: 500 }}>{entry.source || "Источник не указан"}</span>
+                      <button
+                        style={{ marginLeft: 8 }}
+                        onClick={() => startEdit(name, entry, false)}
+                      >
+                        Подробнее
+                      </button>
+                      <button
+                        style={{ marginLeft: 4 }}
+                        onClick={() => startEdit(name, entry, true)}
+                      >
+                        Редактировать
+                      </button>
+                    </div>
+                  ))}
+                </td>
+                <td>
                   <button onClick={() => deleteFish(name)} style={{ color: "red", marginLeft: 8 }}>
-                    Удалить
+                    Удалить вид полностью
                   </button>
                 </td>
               </tr>

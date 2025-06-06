@@ -2,10 +2,10 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const router = express.Router();
+const { addOrMergeFishData } = require('../utils/fishKnowledge');
 
 const FISH_KNOWLEDGE_PATH = path.join(__dirname, '../data/fish_knowledge.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "supersecret";
-
 
 // Middleware — проверка пароля
 function isAdmin(req, res, next) {
@@ -13,7 +13,6 @@ function isAdmin(req, res, next) {
   if (password === ADMIN_PASSWORD) return next();
   return res.status(401).json({ error: "Unauthorized" });
 }
-
 
 // --- Вспомогательные функции --- //
 function readData() {
@@ -48,23 +47,57 @@ router.post('/', (req, res) => {
   res.json({ ok: true });
 });
 
-
-//JSON import/export
-
+// --- Импорт JSON с МЕРДЖЕМ данных --- //
 router.post('/import', isAdmin, (req, res) => {
   try {
     const imported = req.body;
-    if (!imported || typeof imported !== "object") {
-      return res.status(400).json({ error: "Нет или некорректный JSON" });
+    const db = readData();
+
+    // Вариант 1: { fishName, fishData } (одна рыба)
+    if (imported.fishName && imported.fishData) {
+      const name = imported.fishName;
+      const data = imported.fishData;
+      if (!db[name]) db[name] = [];
+      // Если source такого уже есть — не добавлять
+      if (!db[name].some(e => e.source === data.source)) {
+        db[name].push(data);
+      }
+      writeData(db);
+      return res.json({ ok: true, added: name });
     }
-    // Логируем путь!
-    console.log("FISH_KNOWLEDGE_PATH:", FISH_KNOWLEDGE_PATH);
-    fs.writeFileSync(FISH_KNOWLEDGE_PATH, JSON.stringify(imported, null, 2));
-    res.json({ ok: true });
+
+    // Вариант 2: обычный объект { "щука": [ ... ], ... }
+    if (typeof imported === "object" && !Array.isArray(imported)) {
+      for (const [species, arr] of Object.entries(imported)) {
+        if (!Array.isArray(arr)) continue;
+        if (!db[species]) {
+          db[species] = arr;
+        } else {
+          arr.forEach(newEntry => {
+            const exists = db[species].some(e => e.source === newEntry.source);
+            if (!exists) db[species].push(newEntry);
+          });
+        }
+      }
+      writeData(db);
+      return res.json({ ok: true });
+    }
+
+    res.status(400).json({ error: "Неподдерживаемый формат данных" });
   } catch (e) {
     console.error("Ошибка записи файла:", e);
     res.status(500).json({ error: "Ошибка сохранения файла", detail: e.message });
   }
+});
+
+// Новый роут для добавления знаний по рыбе (оставляем, если нужен)
+router.post('/add-fish-knowledge', (req, res) => {
+  const { fishName, fishData } = req.body;
+  if (!fishName || !fishData) {
+    return res.status(400).json({ error: 'fishName и fishData обязательны' });
+  }
+  const result = addOrMergeFishData(fishName, fishData);
+  res.json({ success: true, data: result });
 });
 
 // --- Обновить или переименовать вид --- //
