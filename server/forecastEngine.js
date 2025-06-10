@@ -2,14 +2,17 @@ const { getWeatherForecast, getLocalMoonPhase } = require("./weather");
 const fs = require("fs");
 const path = require("path");
 
-// === ВЕСОВЫЕ КОЭФФИЦИЕНТЫ (от 0 до 1, сумма = 1) ===
+// === ВЕСОВЫЕ КОЭФФИЦИЕНТЫ (сумма примерно = 1) ===
 const WEIGHTS = {
-  season: 0.4,
-  tempRange: 0.20,
-  wind: 0.20,
-  moon: 0.20
-  // pressure: 0.0 // Если появится — добавь
+  season: 0.3,
+  tempRange: 0.2,
+  wind: 0.15,
+  moon: 0.15,
+  pressure: 0.2 // Добавлен коэффициент давления!
 };
+
+// Универсальное "идеальное" давление для большинства рыб
+const DEFAULT_PRESSURE_RANGE = [1000, 1025];
 
 // Загрузить базу знаний (по видам рыб)
 function getFishKnowledge() {
@@ -105,6 +108,25 @@ function analyzeAllSources({ fish, weather, moonPhase, date, city }) {
     } else {
       reasons.push("средняя лунная фаза");
     }
+
+    // 5. Давление
+    const pressure = weather.daily?.surface_pressure_max?.[0];
+    const pressureRange = rules.pressureRange && rules.pressureRange.length === 2
+      ? rules.pressureRange
+      : DEFAULT_PRESSURE_RANGE;
+    if (pressure) {
+      if (pressure >= pressureRange[0] && pressure <= pressureRange[1]) {
+        score += WEIGHTS.pressure; reasons.push(`давление в норме (${pressure} гПа)`);
+      } else {
+        reasons.push(`давление неидеально (${pressure} гПа)`);
+      }
+    }
+
+    // 6. Осадки (шаблон: если захочешь, реализуешь логику)
+    // const precipitation = weather.daily?.precipitation_sum?.[0];
+    // if (typeof precipitation === "number" && rules.precipitationGood) {
+    //   // Здесь можно придумать аналитику по дождям
+    // }
 
     // Итоговый уровень
     let level = "слабый";
