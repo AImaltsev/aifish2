@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const FILE_PATH = path.join(__dirname, '../fish_knowledge.json');
+const FILE_PATH = path.join(__dirname, '../data/fish_knowledge.json');
 
 function readFishKnowledge() {
   if (!fs.existsSync(FILE_PATH)) return {};

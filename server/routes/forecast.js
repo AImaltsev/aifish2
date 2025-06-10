@@ -17,4 +17,17 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 });
 
+router.post("/live-forecast", async (req, res) => {
+  try {
+    const { facts, place, date, weather } = req.body;
+    const prompt = `Сформулируй живое объяснение прогноза клёва для рыболова по этим данным: ${facts}. Место: ${place}, дата: ${date}, погода: ${weather}. Пиши как рыболовный эксперт.`;
+
+    const result = await generateText(prompt);
+    res.json({ text: result });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Ошибка генерации объяснения" });
+  }
+});
+
 module.exports = router;

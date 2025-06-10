@@ -22,6 +22,9 @@ export default function Home() {
   const [coords, setCoords] = useState({ lat: null, lon: null });
   const [forecast, setForecast] = useState(null);
   const [forecastError, setForecastError] = useState("");
+  const [forecastGpt, setForecastGpt] = useState(""); // Блок для GPT объяснения
+  const [forecastGptLoading, setForecastGptLoading] = useState(false);
+  const [forecastGptError, setForecastGptError] = useState("");
   const navigate = useNavigate();
 
   // Получаем список рыб с сервера
@@ -50,7 +53,7 @@ export default function Home() {
     fetchFishings();
   }, []);
 
-  // Автоматически определяем место по координатам (река, озеро, город, ...).
+  // Определение места по координатам
   useEffect(() => {
     async function fetchPlace() {
       if (coords.lat && coords.lon) {
@@ -58,12 +61,10 @@ export default function Home() {
           const res = await axios.get(
             `http://localhost:4000/api/reverse-geocode?lat=${coords.lat}&lon=${coords.lon}`
           );
-          // 1. Пробуем взять название водоёма, если есть
           const a = res.data.raw?.address || {};
           const water =
             a.water || a.river || a.lake || a.reservoir || a.stream;
           if (water) {
-            // Собираем подпись: река/озеро + город/регион если есть
             let place = water;
             if (a.city) place += `, ${a.city}`;
             else if (a.town) place += `, ${a.town}`;
@@ -73,7 +74,7 @@ export default function Home() {
             setForm(f => ({ ...f, location: res.data.place }));
           }
         } catch (e) {
-          // Не удалось получить место — оставляем как есть
+          // пропускаем
         }
       }
     }
@@ -88,14 +89,15 @@ export default function Home() {
   const handleForecast = async e => {
     e.preventDefault();
     setForecast(null);
+    setForecastGpt(""); // очищаем GPT перед новым запросом
     setForecastError("");
+    setForecastGptError("");
     try {
       let lat, lon;
       if (coords.lat && coords.lon) {
         lat = coords.lat;
         lon = coords.lon;
       } else if (form.location) {
-        // Получаем координаты по названию места
         const geo = await axios.get("http://localhost:4000/api/geocode?city=" + encodeURIComponent(form.location));
         lat = geo.data.lat;
         lon = geo.data.lon;
@@ -104,12 +106,36 @@ export default function Home() {
         return;
       }
       const token = localStorage.getItem("token");
+      // Получаем обычный прогноз
       const res = await axios.post(
         "http://localhost:4000/api/forecast",
         { species: form.species, lat, lon, date: form.date, timeOfDay: form.timeOfDay },
         { headers: { Authorization: "Bearer " + token } }
       );
       setForecast(res.data);
+
+      // Получаем "живое объяснение" от GPT (Сбер)
+      setForecastGptLoading(true);
+      try {
+        const facts = res.data.details
+          ? res.data.details.map(d => d.explanation).join("; ")
+          : res.data.verdict || "";
+        const gptRes = await axios.post(
+          "http://localhost:4000/api/forecast/live-forecast",
+          {
+            facts: facts,
+            place: form.location,
+            date: form.date,
+            weather: res.data.weather || "",
+          },
+          { headers: { Authorization: "Bearer " + token } }
+        );
+        setForecastGpt(gptRes.data.text);
+      } catch (gptErr) {
+        setForecastGptError(gptErr.response?.data?.error || "Ошибка генерации объяснения");
+      } finally {
+        setForecastGptLoading(false);
+      }
     } catch (e) {
       setForecastError(e.response?.data?.error || "Ошибка получения прогноза");
     }
@@ -170,7 +196,6 @@ export default function Home() {
           >
             📍 Моё местоположение
           </button>
-
           {coords.lat && coords.lon && (
             <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
               Координаты: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}
@@ -237,18 +262,17 @@ export default function Home() {
         </div>
         <button type="submit">Показать прогноз</button>
       </form>
+      {/* Вывод блока прогноза (как был) */}
       {forecast && (
         <div
           style={{
-            border: `2px solid ${
-              // Цвет по "лучшему" уровню среди всех источников
-              getLevelColor(
-                forecast.stats && forecast.stats.excellent > 0
-                  ? "отличный"
-                  : forecast.stats && forecast.stats.medium > 0
-                    ? "средний"
-                    : "слабый"
-              )
+            border: `2px solid ${getLevelColor(
+              forecast.stats && forecast.stats.excellent > 0
+                ? "отличный"
+                : forecast.stats && forecast.stats.medium > 0
+                  ? "средний"
+                  : "слабый"
+            )
               }`,
             background: "#fafdff",
             marginBottom: 20,
@@ -309,6 +333,30 @@ export default function Home() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Новый блок: GPT-объяснение для рыбака */}
+      {forecastGptLoading && (
+        <div style={{
+          padding: 14, background: "#f2f8ff", borderRadius: 10, marginBottom: 12, color: "#2563eb"
+        }}>Генерируем совет от ИИ…</div>
+      )}
+      {forecastGpt && (
+        <div style={{
+          border: "2px dashed #51d88a",
+          background: "#f6fff8",
+          marginBottom: 20,
+          padding: 14,
+          borderRadius: 10,
+          fontSize: 17,
+          lineHeight: 1.5
+        }}>
+          <b>Совет AI-рыболова:</b>
+          <div style={{ marginTop: 8, whiteSpace: "pre-line" }}>{forecastGpt}</div>
+        </div>
+      )}
+      {forecastGptError && (
+        <div style={{ color: "red", marginBottom: 10 }}>{forecastGptError}</div>
       )}
       {forecastError && <div style={{ color: "red", marginBottom: 20 }}>{forecastError}</div>}
 
