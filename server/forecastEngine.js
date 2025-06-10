@@ -2,16 +2,17 @@ const { getWeatherForecast, getLocalMoonPhase } = require("./weather");
 const fs = require("fs");
 const path = require("path");
 
-// === ВЕСОВЫЕ КОЭФФИЦИЕНТЫ (сумма примерно = 1) ===
+// === ВЕСОВЫЕ КОЭФФИЦИЕНТЫ (сумма ~1) ===
 const WEIGHTS = {
-  season: 0.3,
-  tempRange: 0.2,
+  season: 0.25,
+  tempRange: 0.15,
   wind: 0.15,
   moon: 0.15,
-  pressure: 0.2 // Добавлен коэффициент давления!
+  pressure: 0.1,          // абсолютное давление
+  pressureStability: 0.20 // стабильность давления
 };
 
-// Универсальное "идеальное" давление для большинства рыб
+// Универсальное "идеальное" давление для большинства рыб (гПа)
 const DEFAULT_PRESSURE_RANGE = [1000, 1025];
 
 // Загрузить базу знаний (по видам рыб)
@@ -29,7 +30,7 @@ function getSeasonByMonth(month) {
   return "осень";
 }
 
-// Генерация красивого объяснения
+// Генерация объяснения прогноза для пользователя
 function makeExplanation({ level, reasons, species, city, t, nowSeason, moonPhase, date, advice, source }) {
   let title = "";
   if (level === "отличный") title = `Сегодня отличный клёв для ${species}${city ? ' в ' + city : ''}!`;
@@ -48,10 +49,19 @@ function makeExplanation({ level, reasons, species, city, t, nowSeason, moonPhas
     tips = "Лучше дождаться лучших условий.";
   }
 
-  return `${title}\nИсточник: ${source || "не указан"}\n${reasons.join(", ")}.\n${tips}\nФаза луны: ${moonPhase}.\nДата: ${date}.`;
+  // TODO: В будущем — персональные советы по уловам
+  return [
+    title,
+    `Источник: ${source || "не указан"}`,
+    reasons.join(", "),
+    tips,
+    `Фаза луны: ${moonPhase}.`,
+    `Дата: ${date}.`,
+    "[TODO] В будущем: здесь появится персональный совет на основе ваших рыбалок."
+  ].join("\n");
 }
 
-// Анализирует все карточки для данного вида рыбы
+// Анализирует все карточки (источники) по виду рыбы
 function analyzeAllSources({ fish, weather, moonPhase, date, city }) {
   const fishKnowledge = getFishKnowledge();
   const knowledgeArr = fishKnowledge[fish.toLowerCase()];
@@ -86,7 +96,7 @@ function analyzeAllSources({ fish, weather, moonPhase, date, city }) {
       }
     }
 
-    // 3. Ветер
+    // 3. Ветер (по направлению)
     const windDir = weather.daily?.winddirection_10m_dominant?.[0];
     if (windDir) {
       if (
@@ -109,24 +119,38 @@ function analyzeAllSources({ fish, weather, moonPhase, date, city }) {
       reasons.push("средняя лунная фаза");
     }
 
-    // 5. Давление
-    const pressure = weather.daily?.surface_pressure_max?.[0];
-    const pressureRange = rules.pressureRange && rules.pressureRange.length === 2
-      ? rules.pressureRange
-      : DEFAULT_PRESSURE_RANGE;
-    if (pressure) {
-      if (pressure >= pressureRange[0] && pressure <= pressureRange[1]) {
-        score += WEIGHTS.pressure; reasons.push(`давление в норме (${pressure} гПа)`);
+    // 5. Давление (абсолютное)
+    const pressureArr = weather.daily?.surface_pressure_max;
+    const pressure = pressureArr?.[0]; // сегодня
+    if (pressure && rules.pressureRange && rules.pressureRange.length === 2) {
+      if (pressure >= rules.pressureRange[0] && pressure <= rules.pressureRange[1]) {
+        score += WEIGHTS.pressure;
+        reasons.push(`давление в норме (${pressure} гПа, идеал: ${rules.pressureRange[0]}–${rules.pressureRange[1]})`);
+      } else {
+        reasons.push(`давление неидеально (${pressure} гПа, идеал: ${rules.pressureRange[0]}–${rules.pressureRange[1]})`);
+      }
+    } else if (pressure) {
+      if (pressure >= DEFAULT_PRESSURE_RANGE[0] && pressure <= DEFAULT_PRESSURE_RANGE[1]) {
+        score += WEIGHTS.pressure;
+        reasons.push(`давление в пределах нормы (${pressure} гПа)`);
       } else {
         reasons.push(`давление неидеально (${pressure} гПа)`);
       }
     }
 
-    // 6. Осадки (шаблон: если захочешь, реализуешь логику)
-    // const precipitation = weather.daily?.precipitation_sum?.[0];
-    // if (typeof precipitation === "number" && rules.precipitationGood) {
-    //   // Здесь можно придумать аналитику по дождям
-    // }
+    // 6. Стабильность давления (динамика)
+    if (pressureArr && pressureArr.length >= 3) {
+      const delta1 = pressureArr[0] - pressureArr[1]; // сегодня-вчера
+      const delta2 = pressureArr[1] - pressureArr[2]; // вчера-позавчера
+      if (Math.abs(delta1) < 2 && Math.abs(delta2) < 2) {
+        score += WEIGHTS.pressureStability;
+        reasons.push(`давление стабильно (${pressureArr[0]} гПа)`);
+      } else if (delta1 < -4) {
+        reasons.push(`давление резко падает (${pressureArr[1]}→${pressureArr[0]} гПа)`);
+      } else if (delta1 > 4) {
+        reasons.push(`давление резко растёт (${pressureArr[1]}→${pressureArr[0]} гПа)`);
+      }
+    }
 
     // Итоговый уровень
     let level = "слабый";
