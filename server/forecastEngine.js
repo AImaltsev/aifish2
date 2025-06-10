@@ -2,6 +2,15 @@ const { getWeatherForecast, getLocalMoonPhase } = require("./weather");
 const fs = require("fs");
 const path = require("path");
 
+// === ВЕСОВЫЕ КОЭФФИЦИЕНТЫ (от 0 до 1, сумма = 1) ===
+const WEIGHTS = {
+  season: 0.4,
+  tempRange: 0.20,
+  wind: 0.20,
+  moon: 0.20
+  // pressure: 0.0 // Если появится — добавь
+};
+
 // Загрузить базу знаний (по видам рыб)
 function getFishKnowledge() {
   const filePath = path.join(__dirname, 'data/fish_knowledge.json');
@@ -59,7 +68,7 @@ function analyzeAllSources({ fish, weather, moonPhase, date, city }) {
     const month = new Date(date).getMonth() + 1;
     const nowSeason = getSeasonByMonth(month);
     if (rules.season && rules.season.includes(nowSeason)) {
-      score += 0.25; reasons.push("подходящий сезон (" + nowSeason + ")");
+      score += WEIGHTS.season; reasons.push("подходящий сезон (" + nowSeason + ")");
     } else {
       reasons.push("неудачный сезон");
     }
@@ -68,7 +77,7 @@ function analyzeAllSources({ fish, weather, moonPhase, date, city }) {
     const t = weather.daily?.temperature_2m_max?.[0];
     if (t && rules.tempRange && rules.tempRange.length === 2) {
       if (t >= rules.tempRange[0] && t <= rules.tempRange[1]) {
-        score += 0.25; reasons.push("температура воды/воздуха в норме (" + t + "°C)");
+        score += WEIGHTS.tempRange; reasons.push("температура воды/воздуха в норме (" + t + "°C)");
       } else {
         reasons.push("температура неидеальна (" + t + "°C)");
       }
@@ -81,7 +90,7 @@ function analyzeAllSources({ fish, weather, moonPhase, date, city }) {
         (windDir >= 157 && windDir <= 202 && rules.weatherGood && rules.weatherGood.join(" ").includes("южн")) ||
         (windDir >= 247 && windDir <= 292 && rules.weatherGood && rules.weatherGood.join(" ").includes("запад"))
       ) {
-        score += 0.25; reasons.push("ветер хороший");
+        score += WEIGHTS.wind; reasons.push("ветер хороший");
       }
       if (
         (windDir >= 337 || windDir <= 22) && rules.weatherBad && rules.weatherBad.join(" ").includes("север")
@@ -92,7 +101,7 @@ function analyzeAllSources({ fish, weather, moonPhase, date, city }) {
 
     // 4. Фаза луны
     if (rules.weatherGood && rules.weatherGood.join(" ").includes(moonPhase)) {
-      score += 0.15; reasons.push("удачная лунная фаза");
+      score += WEIGHTS.moon; reasons.push("удачная лунная фаза");
     } else {
       reasons.push("средняя лунная фаза");
     }

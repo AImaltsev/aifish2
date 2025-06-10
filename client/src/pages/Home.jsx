@@ -238,30 +238,76 @@ export default function Home() {
         <button type="submit">Показать прогноз</button>
       </form>
       {forecast && (
-        <div style={{
-          border: `2px solid ${getLevelColor(forecast.level)}`,
-          background: "#fafdff",
-          marginBottom: 20,
-          padding: 14,
-          borderRadius: 10
-        }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: 4
-          }}>
-            <span style={{
-              width: 16, height: 16,
-              borderRadius: "50%",
-              display: "inline-block",
-              background: getLevelColor(forecast.level),
-              marginRight: 8
-            }}></span>
-            <b>Клёв: {forecast.level?.toUpperCase() || "?"}</b>
+        <div
+          style={{
+            border: `2px solid ${
+              // Цвет по "лучшему" уровню среди всех источников
+              getLevelColor(
+                forecast.stats && forecast.stats.excellent > 0
+                  ? "отличный"
+                  : forecast.stats && forecast.stats.medium > 0
+                    ? "средний"
+                    : "слабый"
+              )
+              }`,
+            background: "#fafdff",
+            marginBottom: 20,
+            padding: 14,
+            borderRadius: 10,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: 4,
+            }}
+          >
+            <span
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: "50%",
+                display: "inline-block",
+                background:
+                  getLevelColor(
+                    forecast.stats && forecast.stats.excellent > 0
+                      ? "отличный"
+                      : forecast.stats && forecast.stats.medium > 0
+                        ? "средний"
+                        : "слабый"
+                  ),
+                marginRight: 8,
+              }}
+            ></span>
+            <b>
+              Клёв: {forecast.verdict?.toUpperCase() || "?"}
+            </b>
           </div>
-          <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", margin: 0 }}>
-            {forecast.explanation}
-          </pre>
+          <div style={{ marginBottom: 10, color: "#697", fontSize: 15 }}>
+            {forecast.moonPhase && <>Фаза луны: <b>{forecast.moonPhase}</b><br /></>}
+            {forecast.date && <>Дата прогноза: {forecast.date}<br /></>}
+          </div>
+          {/* Детализация по источникам */}
+          {forecast.details && forecast.details.length > 0 && (
+            <div>
+              <b>Анализ по источникам:</b>
+              <ul style={{ margin: "8px 0 0 18px" }}>
+                {forecast.details.map((d, i) => (
+                  <li key={i} style={{ marginBottom: 7 }}>
+                    <b>{d.source}:</b>{" "}
+                    <span style={{ color: getLevelColor(d.level), fontWeight: 500 }}>
+                      {d.level}
+                    </span>
+                    <br />
+                    <span style={{ fontSize: 15, whiteSpace: "pre-wrap" }}>
+                      {d.explanation}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
       {forecastError && <div style={{ color: "red", marginBottom: 20 }}>{forecastError}</div>}
