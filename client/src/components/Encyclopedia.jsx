@@ -483,13 +483,16 @@ export default function Encyclopedia() {
                     tackleAdvice: addSourceData.tackleAdvice ? [addSourceData.tackleAdvice] : [],
                   };
                   // Отправка на сервер
-                  const res = await fetch(`/api/fish-admin/add-source/${encodeURIComponent(addSourceFish)}`, {
+                  const res = await fetch("/api/fishadmin/add-source", {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
                       "x-admin-password": getAdminPassword(),
                     },
-                    body: JSON.stringify(formattedSource),
+                    body: JSON.stringify({
+                      fish: addSourceFish,
+                      newSource: formattedSource,
+                    }),
                   });
                   if (res.ok) {
                     setShowAddSource(false);
