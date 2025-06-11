@@ -22,9 +22,15 @@ router.post("/", authMiddleware, async (req, res) => {
 
 router.post("/live-forecast", async (req, res) => {
   try {
-    const { place, date, weather, facts } = req.body;
-    const prompt = `Сформулируй живое объяснение прогноза клёва для рыболова по этим данным: ${facts}. Место: ${place}, дата: ${date}, погода: ${weather}. Пиши как рыболовный эксперт.`;
-
+    const { place, date, weather, facts, species } = req.body;
+    const prompt = `
+Сформулируй живое экспертное объяснение прогноза клёва для рыболова по этим данным: ${facts}.
+Место: ${place}, дата: ${date}, погода: ${weather}.
+Рыба: ${species}.
+Обязательно опиши наиболее эффективные снасти, приманки и методы для ловли именно этой рыбы — ${species}.
+Не упоминай универсальные снасти для других видов. Не предлагай фидер и донку для судака.
+Пиши кратко и как опытный рыболов-эксперт, избегай общих фраз.
+`;
     const result = await askGigaChat(prompt);
     res.json({ text: result });
   } catch (err) {
