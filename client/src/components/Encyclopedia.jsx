@@ -85,6 +85,10 @@ export default function Encyclopedia() {
   const [newFieldName, setNewFieldName] = useState("");
   const [showPasteJson, setShowPasteJson] = useState(false);
   const [pastedJson, setPastedJson] = useState("");
+  const [showAddSource, setShowAddSource] = useState(false);
+  const [addSourceFish, setAddSourceFish] = useState(null);
+  const [addSourceData, setAddSourceData] = useState({});
+
 
   // Загрузка всех рыб
   const loadFish = async () => {
@@ -302,6 +306,16 @@ export default function Encyclopedia() {
                   ))}
                 </td>
                 <td>
+                  <button
+                    style={{ marginTop: 4, marginBottom: 4 }}
+                    onClick={() => {
+                      setAddSourceFish(name);
+                      setAddSourceData({});
+                      setShowAddSource(true);
+                    }}
+                  >
+                    + Добавить источник
+                  </button>
                   <button onClick={() => deleteFish(name)} style={{ color: "red", marginLeft: 8 }}>
                     Удалить вид полностью
                   </button>
@@ -419,6 +433,83 @@ export default function Encyclopedia() {
           </div>
         </div>
       )}
+      {showAddSource && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10
+        }}>
+          <div style={{ background: "#fff", padding: 28, borderRadius: 8, width: 500 }}>
+            <h3>Добавить источник для: {addSourceFish}</h3>
+            <input
+              placeholder="Источник/автор"
+              value={addSourceData.source || ""}
+              onChange={e => setAddSourceData(d => ({ ...d, source: e.target.value }))}
+              style={{ width: "100%", marginBottom: 10 }}
+            />
+            <input
+              placeholder="Сезон (через запятую)"
+              value={addSourceData.season || ""}
+              onChange={e => setAddSourceData(d => ({ ...d, season: e.target.value }))}
+              style={{ width: "100%", marginBottom: 10 }}
+            />
+            <input
+              placeholder="Температура (например: 7,18)"
+              value={addSourceData.tempRange || ""}
+              onChange={e => setAddSourceData(d => ({ ...d, tempRange: e.target.value }))}
+              style={{ width: "100%", marginBottom: 10 }}
+            />
+            <input
+              placeholder="Погода (через запятую)"
+              value={addSourceData.weatherGood || ""}
+              onChange={e => setAddSourceData(d => ({ ...d, weatherGood: e.target.value }))}
+              style={{ width: "100%", marginBottom: 10 }}
+            />
+            <input
+              placeholder="Совет по снасти"
+              value={addSourceData.tackleAdvice || ""}
+              onChange={e => setAddSourceData(d => ({ ...d, tackleAdvice: e.target.value }))}
+              style={{ width: "100%", marginBottom: 10 }}
+            />
+            {/* ...Добавь еще поля если надо */}
+            <div style={{ marginTop: 18 }}>
+              <button
+                onClick={async () => {
+                  // Форматируем данные для отправки
+                  const formattedSource = {
+                    source: addSourceData.source,
+                    season: (addSourceData.season || "").split(",").map(s => s.trim()).filter(Boolean),
+                    tempRange: (addSourceData.tempRange || "").split(",").map(Number).filter(Boolean),
+                    weatherGood: (addSourceData.weatherGood || "").split(",").map(s => s.trim()).filter(Boolean),
+                    tackleAdvice: addSourceData.tackleAdvice ? [addSourceData.tackleAdvice] : [],
+                  };
+                  // Отправка на сервер
+                  const res = await fetch(`/api/fish-admin/add-source/${encodeURIComponent(addSourceFish)}`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-admin-password": getAdminPassword(),
+                    },
+                    body: JSON.stringify(formattedSource),
+                  });
+                  if (res.ok) {
+                    setShowAddSource(false);
+                    setAddSourceFish(null);
+                    setAddSourceData({});
+                    await loadFish();
+                  } else {
+                    alert("Ошибка добавления источника");
+                  }
+                }}
+                style={{ marginRight: 10 }}
+              >Сохранить</button>
+              <button onClick={() => setShowAddSource(false)}>Отмена</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
+
 }
+

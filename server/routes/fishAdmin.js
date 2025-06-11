@@ -100,6 +100,22 @@ router.post('/add-fish-knowledge', (req, res) => {
   res.json({ success: true, data: result });
 });
 
+router.post("/add-source", (req, res) => {
+  const { fish, newSource } = req.body;
+  if (!fish || !newSource || !newSource.source) {
+    return res.status(400).json({ error: "Недостаточно данных" });
+  }
+  try {
+    const data = JSON.parse(fs.readFileSync(FISH_KNOWLEDGE_PATH, "utf8"));
+    if (!data[fish]) data[fish] = [];
+    data[fish].push(newSource);
+    fs.writeFileSync(FISH_KNOWLEDGE_PATH, JSON.stringify(data, null, 2), "utf8");
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Ошибка записи", detail: err.message });
+  }
+});
+
 // --- Обновить или переименовать вид --- //
 router.put('/:name', (req, res) => {
   const oldName = req.body.oldName || req.params.name;
