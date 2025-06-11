@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const { getBiteForecast } = require('../forecastEngine');
-const { generateText } = require('../utils/sbergpt');
+const { askGigaChat } = require('../utils/gigachat');
+
 
 
 // Единый POST эндпоинт
@@ -21,10 +22,10 @@ router.post("/", authMiddleware, async (req, res) => {
 
 router.post("/live-forecast", async (req, res) => {
   try {
-    const { facts, place, date, weather } = req.body;
+    const { place, date, weather, facts } = req.body;
     const prompt = `Сформулируй живое объяснение прогноза клёва для рыболова по этим данным: ${facts}. Место: ${place}, дата: ${date}, погода: ${weather}. Пиши как рыболовный эксперт.`;
 
-    const result = await generateText(prompt);
+    const result = await askGigaChat(prompt);
     res.json({ text: result });
   } catch (err) {
     console.error(err);
