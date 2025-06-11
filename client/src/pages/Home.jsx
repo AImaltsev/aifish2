@@ -22,7 +22,7 @@ export default function Home() {
   const [coords, setCoords] = useState({ lat: null, lon: null });
   const [forecast, setForecast] = useState(null);
   const [forecastError, setForecastError] = useState("");
-  const [forecastGpt, setForecastGpt] = useState(""); // Блок для GPT объяснения
+  const [forecastGpt, setForecastGpt] = useState(""); // Новое состояние
   const [forecastGptLoading, setForecastGptLoading] = useState(false);
   const [forecastGptError, setForecastGptError] = useState("");
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ export default function Home() {
     fetchFishings();
   }, []);
 
-  // Определение места по координатам
+  // Автоматически определяем место по координатам (река, озеро, город, ...).
   useEffect(() => {
     async function fetchPlace() {
       if (coords.lat && coords.lon) {
@@ -74,7 +74,7 @@ export default function Home() {
             setForm(f => ({ ...f, location: res.data.place }));
           }
         } catch (e) {
-          // пропускаем
+          // Не удалось получить место — оставляем как есть
         }
       }
     }
@@ -89,7 +89,7 @@ export default function Home() {
   const handleForecast = async e => {
     e.preventDefault();
     setForecast(null);
-    setForecastGpt(""); // очищаем GPT перед новым запросом
+    setForecastGpt("");
     setForecastError("");
     setForecastGptError("");
     try {
@@ -106,24 +106,20 @@ export default function Home() {
         return;
       }
       const token = localStorage.getItem("token");
-      // Получаем обычный прогноз
+      // 1. Получаем обычный прогноз
       const res = await axios.post(
         "http://localhost:4000/api/forecast",
         { species: form.species, lat, lon, date: form.date, timeOfDay: form.timeOfDay },
         { headers: { Authorization: "Bearer " + token } }
       );
       setForecast(res.data);
-
-      // Получаем "живое объяснение" от GPT (Сбер)
+      // 2. Получаем "живое объяснение" от GPT (Сбер)
       setForecastGptLoading(true);
       try {
-        const facts = res.data.details
-          ? res.data.details.map(d => d.explanation).join("; ")
-          : res.data.verdict || "";
         const gptRes = await axios.post(
           "http://localhost:4000/api/forecast/live-forecast",
           {
-            facts: facts,
+            facts: res.data.details?.map(d => d.explanation).join("; ") || "",
             place: form.location,
             date: form.date,
             weather: res.data.weather || "",
@@ -196,6 +192,7 @@ export default function Home() {
           >
             📍 Моё местоположение
           </button>
+
           {coords.lat && coords.lon && (
             <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
               Координаты: {coords.lat.toFixed(6)}, {coords.lon.toFixed(6)}
@@ -262,7 +259,6 @@ export default function Home() {
         </div>
         <button type="submit">Показать прогноз</button>
       </form>
-      {/* Вывод блока прогноза (как был) */}
       {forecast && (
         <div
           style={{

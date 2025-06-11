@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const { getBiteForecast } = require('../forecastEngine');
+const { generateText } = require('../utils/sbergpt');
+
 
 // Единый POST эндпоинт
 router.post("/", authMiddleware, async (req, res) => {

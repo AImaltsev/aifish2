@@ -21,6 +21,7 @@
     "jsonwebtoken": "^9.0.2",
     "lunarphase-js": "^2.0.3",
     "lune": "^0.4.0",
+    "node-fetch": "^3.3.2",
     "prisma": "^6.9.0"
   }
 }
