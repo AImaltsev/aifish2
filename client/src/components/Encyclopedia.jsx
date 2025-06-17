@@ -302,6 +302,32 @@ export default function Encyclopedia() {
                       >
                         Редактировать
                       </button>
+
+                      <button
+                        style={{ marginTop: 6, marginLeft: 6, color: "red" }}
+                        onClick={async () => {
+                          if (!window.confirm("Удалить этот источник?")) return;
+                          const res = await fetch("/api/fish-admin/delete-source", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                              "x-admin-password": getAdminPassword(),
+                            },
+                            body: JSON.stringify({
+                              fish: name,
+                              idx, // индекс источника в массиве
+                            }),
+                          });
+                          const json = await res.json();
+                          if (res.ok && json.ok) {
+                            await loadFish();
+                          } else {
+                            alert("Ошибка удаления источника: " + (json?.error || "Неизвестная ошибка"));
+                          }
+                        }}
+                      >
+                        Удалить
+                      </button>
                     </div>
                   ))}
                 </td>
@@ -483,7 +509,7 @@ export default function Encyclopedia() {
                     tackleAdvice: addSourceData.tackleAdvice ? [addSourceData.tackleAdvice] : [],
                   };
                   // Отправка на сервер
-                  const res = await fetch("/api/fishadmin/add-source", {
+                  const res = await fetch("/api/fish-admin/add-source", {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",

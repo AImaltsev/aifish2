@@ -101,6 +101,7 @@ router.post('/add-fish-knowledge', (req, res) => {
 });
 
 router.post("/add-source", (req, res) => {
+  console.log("POST /add-source body:", req.body);
   const { fish, newSource } = req.body;
   if (!fish || !newSource || !newSource.source) {
     return res.status(400).json({ error: "Недостаточно данных" });
@@ -115,6 +116,29 @@ router.post("/add-source", (req, res) => {
     res.status(500).json({ error: "Ошибка записи", detail: err.message });
   }
 });
+
+// Удалить источник у определённой рыбы (по индексу)
+router.post("/delete-source", (req, res) => {
+  const { fish, idx } = req.body;
+  if (!fish || typeof idx !== "number") {
+    return res.status(400).json({ error: "fish и idx обязательны" });
+  }
+  try {
+    const data = readData();
+    if (!data[fish] || !Array.isArray(data[fish])) {
+      return res.status(404).json({ error: "Рыба не найдена" });
+    }
+    if (idx < 0 || idx >= data[fish].length) {
+      return res.status(400).json({ error: "Некорректный индекс источника" });
+    }
+    data[fish].splice(idx, 1);
+    writeData(data);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Ошибка записи", detail: err.message });
+  }
+});
+
 
 // --- Обновить или переименовать вид --- //
 router.put('/:name', (req, res) => {
