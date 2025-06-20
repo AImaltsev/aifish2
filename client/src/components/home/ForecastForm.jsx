@@ -1,9 +1,7 @@
-// src/components/home/ForecastForm.jsx
 import MapPicker from "../MapPicker";
 
 export default function ForecastForm({
-  form, coords, fishList, handleChange, setCoords, resetCoords,
-  handleGeolocate, handleForecast, loading
+  form, fishList, coords, setCoords, handleChange, handleForecast, resetCoords
 }) {
   return (
     <form onSubmit={handleForecast} style={{ marginBottom: 20, border: "1px solid #ccc", padding: 10, borderRadius: 8 }}>
@@ -29,7 +27,20 @@ export default function ForecastForm({
         />
         <button
           type="button"
-          onClick={handleGeolocate}
+          onClick={async () => {
+            if ("geolocation" in navigator) {
+              navigator.geolocation.getCurrentPosition(
+                pos => {
+                  setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+                },
+                err => {
+                  alert("Не удалось получить геолокацию");
+                }
+              );
+            } else {
+              alert("Геолокация не поддерживается вашим браузером");
+            }
+          }}
           style={{
             margin: "8px 0",
             padding: "4px 10px",
@@ -106,7 +117,7 @@ export default function ForecastForm({
           </select>
         </label>
       </div>
-      <button type="submit" disabled={loading}>Показать прогноз</button>
+      <button type="submit">Показать прогноз</button>
     </form>
   );
 }

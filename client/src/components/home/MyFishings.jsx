@@ -1,5 +1,4 @@
-// src/components/home/UserFishingList.jsx
-export default function UserFishingList({ fishings }) {
+export default function MyFishings({ fishings }) {
   return (
     <div>
       <h2>Мои рыбалки:</h2>
