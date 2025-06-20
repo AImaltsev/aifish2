@@ -3,8 +3,7 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const { getBiteForecast } = require('../forecastEngine');
 const { askGigaChat } = require('../utils/gigachat');
-
-
+const { isPointOnVolga } = require('../utils/isVolga'); // Импортируем функцию
 
 // Единый POST эндпоинт
 router.post("/", authMiddleware, async (req, res) => {
@@ -13,13 +12,23 @@ router.post("/", authMiddleware, async (req, res) => {
     return res.status(400).json({ error: "species, lat, lon required" });
   }
   try {
+    // Проверяем: точка на Волге?
+    const onVolga = isPointOnVolga(lat, lon);
+
     const forecast = await getBiteForecast({ species, lat, lon, date });
-    res.json(forecast);
+
+    // Добавляем признак onVolga в ответ для фронта
+    res.json({
+      ...forecast,
+      onVolga,
+    });
   } catch (err) {
+    console.error("Ошибка при формировании прогноза:", err);
     res.status(500).json({ error: "Ошибка прогноза клёва", detail: err.message });
   }
 });
 
+// Генерация живого объяснения (AI)
 router.post("/live-forecast", async (req, res) => {
   try {
     const { place, date, weather, facts, species } = req.body;
