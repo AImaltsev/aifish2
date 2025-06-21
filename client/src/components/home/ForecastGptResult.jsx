@@ -3,7 +3,7 @@ export default function ForecastGptResult({ forecastGpt, loading, error }) {
     return (
       <div style={{
         padding: 14, background: "#f2f8ff", borderRadius: 10, marginBottom: 12, color: "#2563eb"
-      }}>Генерируем совет от ИИ…</div>
+      }}>Генерируем прогноз клёва на основании более чем 100 показателей…</div>
     );
   }
   if (error) {
@@ -20,7 +20,7 @@ export default function ForecastGptResult({ forecastGpt, loading, error }) {
       fontSize: 17,
       lineHeight: 1.5
     }}>
-      <b>Совет AI-рыболова:</b>
+      <b>Ваш персональный прогноз клёва:</b>
       <div style={{ marginTop: 8, whiteSpace: "pre-line" }}>{forecastGpt}</div>
     </div>
   );

@@ -1,10 +1,18 @@
 import MapPicker from "../MapPicker";
 
 export default function ForecastForm({
-  form, fishList, coords, setCoords, handleChange, handleForecast, resetCoords
+  form, fishList, coords, setCoords, handleChange, handleForecastButton, resetCoords
 }) {
   return (
-    <form onSubmit={handleForecast} style={{ marginBottom: 20, border: "1px solid #ccc", padding: 10, borderRadius: 8 }}>
+    <form
+      onSubmit={handleForecastButton}
+      style={{
+        marginBottom: 20,
+        border: "1px solid #ccc",
+        padding: 10,
+        borderRadius: 8
+      }}
+    >
       <h3>Получить прогноз клёва</h3>
       <div style={{ marginBottom: 8 }}>
         <label>Где ловить:&nbsp;

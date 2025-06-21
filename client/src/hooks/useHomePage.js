@@ -67,7 +67,9 @@ export function useHomePage(navigate) {
   const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
   const handleForecast = async e => {
-    e.preventDefault();
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
+    }
     setForecast(null);
     setForecastGpt("");
     setForecastError("");
